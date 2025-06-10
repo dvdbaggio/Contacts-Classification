@@ -1,0 +1,8 @@
+# ignore features_ring folder
+features_ring/
+
+# ignore .pkl files
+*.pkl
+
+# ignore .DS_Store files
+.DS_Store
