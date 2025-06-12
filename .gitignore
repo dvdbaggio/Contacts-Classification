@@ -9,3 +9,6 @@ features_ring/
 
 # ignore sb_project folder
 sb_project/
+
+# ignore models folder
+models/
