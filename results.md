@@ -53,3 +53,22 @@ With `scale_pos_weight` parameter + fixed SMOTE only over training split
 | SSBOND | 0.9990 | 0.9614 | ![](fi_plots/fe_smote/a5_product/bal1_class_5.png) |
 | PIHBOND | 0.9694 | 0.7977 | ![](fi_plots/fe_smote/a5_product/bal1_class_6.png) |
 | Unclassified | 0.7335 | 0.7123 | ![](fi_plots/fe_smote/a5_product/bal1_class_7.png) |
+
+## Engineered all the features
+
+For each feature (not distinguished between source and target) it was compute 4 ways to combine the features:
+- sum
+- absolute difference
+- product
+- average
+
+| Interaction Type | Accuracy | Balanced Accuracy | Feature Importance Plot |
+|------------------|----------|-------------------|------------------------|
+| HBOND | 0.6422 | 0.6573 | ![](fi_plots/fe_smote/all_features/class0.png) |
+| VDW | 0.5208 | 0.5361 | ![](fi_plots/fe_smote/all_features/class1.png) |
+| PIPISTACK | 0.9791 | 0.9872 | ![](fi_plots/fe_smote/all_features/class2.png) |
+| IONIC | 0.9421 | 0.9619 | ![](fi_plots/fe_smote/all_features/class3.png) |
+| PICATION | 0.9788 | 0.9560 | ![](fi_plots/fe_smote/all_features/class4.png) |
+| SSBOND | 0.9991 | 0.9734 | ![](fi_plots/fe_smote/all_features/class5.png) |
+| PIHBOND | 0.9838 | 0.7574 | ![](fi_plots/fe_smote/all_features/class6.png) |
+| Unclassified | 0.7396 | 0.7170 | ![](fi_plots/fe_smote/all_features/class7.png) |
