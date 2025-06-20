@@ -83,11 +83,73 @@ For each feature (not distinguished between source and target) it was compute 4 
 | 1 | 0.5162 | 0.5382 | 0.5549 | 0.0660 | 0.2833 | ![](fi_plots/ova/fe_smote/all_features/fi_1.png) | ![](fi_plots/ova/fe_smote/all_features/cm_1.png) |
 | 2 | 0.9790 | 0.9885 | 0.9910 | 0.6096 | 0.4463 | ![](fi_plots/ova/fe_smote/all_features/fi_2.png) | ![](fi_plots/ova/fe_smote/all_features/cm_2.png) |
 | 3 | 0.9415 | 0.9640 | 0.9775 | 0.3944 | 0.2393 | ![](fi_plots/ova/fe_smote/all_features/fi_3.png) | ![](fi_plots/ova/fe_smote/all_features/cm_3.png) |
-| 4 | 0.9753 | 0.9710 | 0.9911 | 0.3145 | 0.1793 | ![](fi_plots/ova/fe_smote/all_features/fi_4.png) | ![](fi_plots/ova/fe_smote/all_features/cm_3.png) |
+| 4 | 0.9764 | 0.9708 | 0.9914 | 0.3210 | 0.1835 | ![](fi_plots/ova/fe_smote/all_features/fi_4.png) | ![](fi_plots/ova/fe_smote/all_features/cm_3.png) |
 | 5 | 0.9990 | 0.9876 | 0.9995 | 0.6374 | 0.4226 | ![](fi_plots/ova/fe_smote/all_features/fi_5.png) | ![](fi_plots/ova/fe_smote/all_features/cm_5.png) |
 | 6 | 0.9373 | 0.9002 | 0.9525 | 0.0808 | 0.0174 | ![](fi_plots/ova/fe_smote/all_features/fi_6.png) | ![](fi_plots/ova/fe_smote/all_features/cm_6.png) |
 | 7 | 0.7339 | 0.7183 | 0.7953 | 0.4329 | 0.6769 | ![](fi_plots/ova/fe_smote/all_features/fi_7.png) | ![](fi_plots/ova/fe_smote/all_features/cm_7.png) |
 
+### features selection
+
+| Class | Accuracy | Balanced Accuracy | AUC-ROC | Matthews Correlation | Average Precision | Feature Importance | Confusion Matrix |
+|-------|----------|-------------------|---------|---------------------|-------------------|-------------------|------------------|
+| 0 | 0.6139 | 0.6197 | 0.6685 | 0.2293 | 0.5117 | ![](fi_plots/ova/fe_smote/all_features/fi_0.png) | ![](fi_plots/ova/fe_smote/all_features/cm_0.png) |
+| 1 | 0.5015 | 0.5279 | 0.5396 | 0.0483 | 0.2713 | ![](fi_plots/ova/fe_smote/all_features/fi_1.png) | ![](fi_plots/ova/fe_smote/all_features/cm_1.png) |
+| 2 | 0.9789 | 0.9886 | 0.9909 | 0.6090 | 0.4458 | ![](fi_plots/ova/fe_smote/all_features/fi_2.png) | ![](fi_plots/ova/fe_smote/all_features/cm_2.png) |
+| 3 | 0.9428 | 0.9600 | 0.9767 | 0.3950 | 0.2278 | ![](fi_plots/ova/fe_smote/all_features/fi_3.png) | ![](fi_plots/ova/fe_smote/all_features/cm_3.png) |
+| 4 | 0.9753 | 0.9710 | 0.9911 | 0.3145 | 0.1793 | ![](fi_plots/ova/fe_smote/all_features/fi_4.png) | ![](fi_plots/ova/fe_smote/all_features/cm_3.png) |
+| 5 | 0.8413 | 0.7124 | 0.8165 | 0.0309 | 0.0141 | ![](fi_plots/ova/fe_smote/all_features/fi_5.png) | ![](fi_plots/ova/fe_smote/all_features/cm_5.png) |
+| 6 | 0.9044 | 0.8768 | 0.9351 | 0.0628 | 0.0086 | ![](fi_plots/ova/fe_smote/all_features/fi_6.png) | ![](fi_plots/ova/fe_smote/all_features/cm_6.png) |
+| 7 | 0.6788 | 0.6595 | 0.7239 | 0.3160 | 0.5917 | ![](fi_plots/ova/fe_smote/all_features/fi_7.png) | ![](fi_plots/ova/fe_smote/all_features/cm_7.png) |
+
+### Unified models
+
+**Overall Model Performance**
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 0.4870 |
+| Balanced Accuracy | 0.7029 |
+| Matthews Correlation Coefficient | 0.2795 |
+
+**Per-Class Metrics**
+
+| Class | ROC AUC | Average Precision |
+|-------|---------|-------------------|
+| HBOND | 0.7206 | 0.5565 |
+| VDW | 0.5549 | 0.2833 |
+| PIPISTACK | 0.9910 | 0.4463 |
+| IONIC | 0.9775 | 0.2393 |
+| PICATION | 0.9914 | 0.1835 |
+| SSBOND | 0.9995 | 0.4226 |
+| PIHBOND | 0.9525 | 0.0174 |
+| Unclassified | 0.7953 | 0.6769 |
+| **Macro-Average** | **0.8728** | **0.3532** |
+
+**Selected features**
+
+**Overall Performance Metrics**
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 0.3317 |
+| Balanced Accuracy | 0.3141 |
+| Matthews Correlation Coefficient | 0.1411 |
+
+**Per-Class Metrics**
+
+| Class | ROC AUC | Average Precision |
+|-------|---------|-------------------|
+| HBOND | 0.6699 | 0.5180 |
+| VDW | 0.5360 | 0.2679 |
+| PIPISTACK | 0.8114 | 0.0657 |
+| IONIC | 0.7908 | 0.0412 |
+| PICATION | 0.7959 | 0.0207 |
+| SSBOND | 0.8471 | 0.0420 |
+| PIHBOND | 0.7761 | 0.0150 |
+| Unclassified | 0.6767 | 0.5402 |
+| **Macro-Average** | **0.7380** | **0.1888** |
+
+![](fi_plots/ova/fe_smote/all_features/fe_unified_model.png)
 
 # A single one multi-class classifier
 
@@ -103,3 +165,14 @@ For each feature (not distinguished between source and target) it was compute 4 
 
 ![Feature Importance Plot](fi_plots/mcc/fe_smote/fi_mcc.png)
 ![Confusion Matrix](fi_plots/mcc/fe_smote/cm_mcc.png)
+
+### features selection
+
+===== Performance Metrics =====
+                           Value
+Metric                          
+Accuracy                  0.4920
+Balanced Accuracy         0.2098
+AUC-ROC                   0.7430
+Matthews Correlation      0.2008
+Average Precision         0.2317
