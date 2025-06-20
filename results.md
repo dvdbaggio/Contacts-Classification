@@ -1,4 +1,28 @@
-# Performance w/o features engineering w/o SMOTE
+# Multiclass Classification
+## Performance w/o features engineering + SMOTE
+| Metric | Value |
+|------------------|----------|
+| Accuracy | 0.5264 |
+| Balanced Accuracy | 0.5971 |
+| AUC-ROC | 0.8803 |
+| Matthews Correlation | 0.2837 |
+| Average Precision | 0.5759 |
+| Inference Time | 2921.6597 |
+
+## Performance w/o features engineering + SMOTE (auto)
+| Metric | Value |
+|------------------|----------|
+| Accuracy | 0.5310 |
+| Balanced Accuracy | 0.3988 |
+| AUC-ROC | 0.8738 |
+| Matthews Correlation | 0.2786 |
+| Average Precision | 0.3543 |
+| Inference Time | 4563.5719 |
+
+
+
+# One-vs-All
+## Performance w/o features engineering w/o SMOTE
 | Interaction Type | Accuracy | Balanced Accuracy | Feature Importance Plot |
 |------------------|----------|-------------------|------------------------|
 | HBOND | 0.6444 | 0.6581 | ![](fi_plots/no_fe_no_smote/1.png) |
@@ -10,7 +34,7 @@
 | PIHBOND | 0.9248 | 0.8842 | ![](fi_plots/no_fe_no_smote/7.png) |
 | Unclassified | 0.7326 | 0.7101 | ![](fi_plots/no_fe_no_smote/8.png) |
 
-# Performance w/o features engineering + SMOTE
+## Performance w/o features engineering + SMOTE
 | Interaction Type | Accuracy | Balanced Accuracy | Feature Importance Plot |
 |------------------|----------|-------------------|------------------------|
 | HBOND | 0.6426 | 0.6581 | ![](fi_plots/no_fe_smote/1.png) |
@@ -23,9 +47,9 @@
 | Unclassified | 0.7320 | 0.7106 | ![](fi_plots/no_fe_smote/8.png) |
 
 
-# Performance with features engineering + SMOTE
+## Performance with features engineering + SMOTE
 
-## `a5` product
+### `a5` product
 
 Without `scale_pos_weight` parameter
 
