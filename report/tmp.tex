@@ -1,0 +1,167 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+\usepackage{cvpr}
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+% \usepackage[table,xcdraw]{xcolor}
+\usepackage{caption}
+\usepackage{makecell}
+\usepackage[T1]{fontenc}
+\usepackage{placeins}
+\usepackage{booktabs}
+
+\definecolor{lightergray}{rgb}{0.9,0.9,0.9}
+\renewcommand{\arraystretch}{1.15}
+
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{green},
+    showstringspaces=false,
+    frame=single,
+    breaklines=true
+}
+% Include other packages here, before hyperref.
+
+% If you comment hyperref and then uncomment it, you should delete
+% egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
+% run, let it finish, and you should be clear).
+\usepackage[breaklinks=true,bookmarks=false]{hyperref}
+
+\cvprfinalcopy % *** Uncomment this line for the final submission
+
+\def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
+\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+
+% Pages are numbered in submission mode, and unnumbered in camera-ready
+%\ifcvprfinal\pagestyle{empty}\fi
+\setcounter{page}{1}
+\begin{document}
+
+%%%%%%%%% TITLE
+\title{Classification of contacts in protein structures via ML models}
+
+\author{Davide Baggio\\
+{\tt\small davide.baggio.1@studenti.unipd.it}
+% For a paper whose authors are all at the same institution,
+% omit the following lines up until the closing ``}''.
+% Additional authors and addresses can be added with ``\and'',
+% just like the second author.
+% To save space, use either the email address or home page, not both
+\and
+Sebastiano Sanson\\
+{\tt\small sebastiano.sanson@studenti.unipd.it}
+}
+
+\maketitle
+%\thispagestyle{empty}
+
+\begin{abstract}
+    Predicting the type of inter-residue contact in a protein structure is important for understanding its interaction network.  In this work we frame the RING contact classification task as a supervised learning problem, using gradient-boosted trees (XGBoost) to predict each contact's RING-defined type from structural features.  We train on a large dataset of residue-residue contacts (from 3,914 PDBs) labeled by RING (types like hydrogen bond, van der Waals, salt bridge, etc.) and evaluate performance via metrics suited for imbalanced multiclass data (Matthews correlation coefficient, balanced accuracy, ROC-AUC, average precision).  Two approaches are compared: a single multiclass XGBoost model (softmax objective) and an ensemble of one-vs-all binary XGBoost classifiers (logistic objective). The one-vs-all ensemble attains slightly higher accuracy, while the multiclass model yields higher average precision on common contact classes.  Rare contact types (e.g.\ disulfide bridges) are often predicted with very high ROC-AUC, while classes like “Unclassified” remain challenging.  Overall, XGBoost proves to be a viable classifier for this task given the extracted structural features.
+\end{abstract}
+    
+
+%%%%%%%%% BODY TEXT
+\section{Introduction}
+
+Residue Interaction Networks (RINs) represent a protein's 3D structure as a graph of amino-acid contacts, capturing non-covalent interactions based on geometrical and physicochemical criteria.  The RING software identifies such contacts from a PDB structure and assigns each a type (e.g.\ hydrogen bond, van der Waals, salt bridge, $\pi$-stacking, etc.).  Traditionally, RING’s classification relies on geometric rules; here we instead train a data-driven model to predict a contact’s RING type from features of the interacting residues.  Predicting contact types by statistical methods can help validate and complement physics-based annotations.  In this study we use XGBoost (gradient-boosted trees) to classify contact types, aiming to reproduce RING’s labeling from structure-derived features.  We leverage the provided training data (features extracted by Biopython and 3Di encoding scripts) and compare a multiclass classification approach to a one-vs-all scheme.
+
+
+\section{Data Source}
+\label{sec:datasource}
+
+The dataset comprises a collection of example from 3,914 PDBs, containing one line per residue–residue contact.  In total the dataset includes on the order of $3\times10^6$ contacts, with a highly imbalanced distribution of RING types (e.g.\ $\sim1.06\times10^6$ hydrogen bonds, $\sim1.09\times10^6$ “Unclassified” contacts, but only a few thousand disulfide bonds).  Each record lists identifiers of the two residues and a variety of structural features for each “source” and “target” residue, plus the RING interaction type label (Table ).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+Contact & Count \\
+\hline
+HBOND & 1,055,929 \\
+VDW & 737,0610 \\
+PIPISTACK & 38,283 \\
+SSBOND & 35,391 \\
+CATIONPI & 8,885 \\
+IONIC & 2,100 \\
+HYDROPHOBIC & 1,790 \\
+Unclassified & 1,089,547 \\
+\hline
+\end{tabular}
+\caption{Distribution of contact types in the dataset.  The “Unclassified” type is the most common, followed by hydrogen bonds and van der Waals interactions.  The other types are much rarer, with only a few thousand examples each.}
+\label{tab:contact_distribution}
+\end{table}
+
+
+\subsection{Data Preprocessing}
+
+% manca OVA
+The raw feature files were merged into a single DataFrame.  We first handled missing and duplicate data: any contact with a missing Interaction label was relabeled as “Unclassified”.  Exact duplicate rows were removed (keeping one copy) to avoid over-counting (the notebooks sorted by class frequency and dropped duplicates).  For the numeric features (phi, psi angles, RSA, etc.), missing values were filled by the column mean.  After this imputation there were no remaining NaNs.  Categorical features were encoded as integers: in particular, the DSSP secondary-structure state (s\_ss8 and t\_ss8) was label-encoded.  (The 3Di alphabet letters were dropped in favor of the 3Di state index.)
+
+\subsection{Feature Engineering}
+
+For each contact (residue pair) we used structural descriptors of both the source and target residues.  These include:
+
+\begin{itemize}
+\item {\bf Secondary structure (DSSP)}: 8-state labels for each residue (columns s\_ss8, t\_ss8), later encoded as integers.
+\item {\bf Solvent accessibility (RSA)}: relative solvent-accessibility values (s\_rsa, t\_rsa).
+\item {\bf Backbone dihedral angles}: phi and psi angles for each residue (s\_phi, s\_psi, t\_phi, t\_psi).
+\item {\bf Atchley factors}: five physiochemical factor scores per residue ($s\_a1-s\_a5$, $[t\_a1, t\_a5]$) .
+\item {\bf 3Di structural state}: the 3Di alphabet state index for each residue (s\_3di\_state, t\_3di\_state).
+\end{itemize}
+
+Altogether this yields a feature vector capturing both the local secondary-structural context and physico-chemical properties of the residue pair.
+
+% manca features engineering
+
+\subsection{Balancing the Dataset}
+Due to the highly imbalanced nature of the dataset (with some classes like “Unclassified” dominating), we applied class balancing techniques.  SMOTE (Synthetic Minority Over-sampling Technique) was used to generate synthetic examples for the minority classes, ensuring that each class had a more balanced representation in the training set.  This helps prevent the model from being biased towards the majority class and improves its ability to generalize across all contact types. 
+We also used class weights in the XGBoost model to further mitigate the imbalance during training.
+
+\section{Approaches}
+We implemented two strategies using XGBoost:
+
+\paragraph{Multiclass XGBoost.}  A single XGBoost model was trained with the objective \texttt{multi:softprob} for 8-way classification (7 contact classes plus “Unclassified”).  
+We used class-balanced training by providing sample weights (\texttt{compute\_sample\_weight('balanced')}) to the DMatrix (to mitigate class imbalance).  Key hyperparameters (selected via some manual tuning) included a maximum tree depth of 8, learning rate 0.03, subsample~0.85, and regularization terms ($\gamma=0.2$, $\alpha=0.5$, $\lambda=1.5$, etc).  
+Early stopping on validation log-loss was applied to prevent overfitting.  Predictions are the class with maximum predicted probability.
+
+\paragraph{One-vs-All Ensemble.}  In parallel, we trained eight binary XGBoost classifiers, one per class.  For class $i$ we labeled all training examples of type $i$ as positive (1) and all others as negative (0).  Each binary model used the \texttt{ binary:logistic} objective.  We adjusted for the imbalance by setting the \texttt{ scale\_pos\_weight = (negatives/positives)} for each class.  All binary models shared most hyperparameters (max\_depth, learning rate, etc.), with evaluation metrics set to AUC and average precision.  At prediction time, the eight binary models output one probability each; the final predicted class is taken as the class with highest probability.
+
+\paragraph{Comparison and Tuning.}  Both methods used a fixed train/validation split (or cross-validation) from the provided data.  We did not perform an extensive automated search for hyperparameters, but rather adjusted a few parameters (tree depth, regularization) to optimize validation MCC.  Both approaches were implemented in the provided notebooks, and their parameters and training procedures were as shown in the code    .
+
+
+\section{Model Evaluation Metrics}
+We evaluated performance using metrics that account for class imbalance and multi-class scoring.  As specified in the project requirements, we computed:
+\begin{itemize}
+\item {\bf Balanced accuracy}: the average of recall (true positive rate) over all classes.
+\item {\bf Matthews Correlation Coefficient (MCC)}: a correlation coefficient between true and predicted labels (a balanced measure even for imbalanced data).
+\item {\bf ROC-AUC}: area under the Receiver Operating Characteristic curve, extended to the multiclass setting (one-vs-rest average).
+\item {\bf Average Precision (AP)}: area under the precision-recall curve, indicative of performance on positive class detection.
+\end{itemize}
+These metrics were explicitly noted as evaluation criteria in the project specification   and are standard for multiclass classification.  Higher values (up to 1.0) indicate better performance; a random predictor would score near 0.5 (AUC) or 0 (MCC/AP) in expectation.
+
+
+
+\section{Testing and results analysis}
+After training, we evaluated both models on held-out test data (from the provided set).  The multiclass XGBoost model achieved an overall \textbf{Balanced Accuracy} of about 0.721 and \textbf{Matthews correlation} ~0.207 on test data.  (Overall accuracy was $\sim$0.426.)  The one-vs-all ensemble performed similarly: Balanced Accuracy 0.718 and MCC0.203  .  Thus both methods substantially outperformed random chance, but the numeric values indicate only moderate predictive power.  The one-vs-all approach yielded a slightly higher raw accuracy (0.484 vs 0.426) but similar balanced accuracy, suggesting it was better at predicting majority classes while still matching multiclass recall performance.  Conversely, the multiclass model produced a higher \textbf{macro-average AP} (~0.415) than the ensemble (~0.325), indicating better precision on the more common classes.
+
+Examining per-class performance (OVA ensemble): some contact types were predicted extremely well in terms of ranking.  For example, the rare \textit{SSBOND} (disulfide) and \textit{PIPISTACK} classes each had ROC-AUC $\approx 0.99$ and AP around 0.40 (0.4034 for SSBOND)  .  Common classes like \textit{HBOND} and \textit{VDW} had lower AUC (~0.66 and 0.63, respectively) and moderate AP (0.69 and 0.55)  .  The “Unclassified” class was effectively never predicted (AP0), as the models favored assigning one of the specific types.  In summary, the models learned to distinguish well-defined interaction types (especially those with distinctive structural signatures) but struggled to identify the generic/unclassified interactions.  The confusion matrices (not shown) confirmed that many contacts were misassigned among the major classes, consistent with the modest MCC values.
+
+
+
+\section{Conclusions}
+In conclusion, gradient-boosted trees (XGBoost) can learn to predict residue–residue contact types from structural features with performance well above random, confirming that the features (DSSP, RSA, angles, Atchley, 3Di) carry information about interaction class.  Both a single multiclass model and a one-vs-all ensemble achieved similar results (Balanced Acc $\approx0.72$, MCC $\approx0.20$) in this dataset.  The one-vs-all method had slightly higher accuracy, while the multiclass model achieved higher average precision on the main classes.  Overall, XGBoost shows effectiveness for this task, though predicting the abundant “Unclassified” contacts remains difficult.  Future work could explore additional features or model architectures (e.g.\ graph neural networks) to improve classification of borderline contacts.
+
+
+{\small
+\bibliographystyle{ieee_fullname}
+\bibliography{egbib}
+}
+
+\end{document}
