@@ -12,3 +12,21 @@ sb_project/
 
 # ignore models folder
 models/
+
+# ignore data/models folder
+data/models/
+
+# ignore .tsv files
+*.tsv
+
+# not ignore atchley.tsv
+!atchley.tsv
+
+# ignore .cif files
+*.cif
+
+# ignore __pycache__ folders
+__pycache__/
+
+# ignore fi_plots folder
+fi_plots/
