@@ -137,7 +137,7 @@ def predict_contacts(pdb_id, model_type = 'multiclass'):
         logging.info("Using OVA model for prediction...")
 
         # Load multiple binary models for OVA
-        models_dir = 'models/bin_models'
+        models_dir = 'data/models/bin_models'
         if not os.path.exists(models_dir):
             logging.warning(f"Model directory not found: {models_dir}")
             raise FileNotFoundError(f"Model directory does not exist: {models_dir}")
@@ -216,7 +216,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 # Example usage: python predictor.py --input 1aba --model multiclass
 
