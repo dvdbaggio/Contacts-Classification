@@ -8,13 +8,15 @@ import numpy as np
 import xgboost as xgb
 
 def parse_args():
+    """Parse command line arguments.""" 
     parser = argparse.ArgumentParser(description="Predict contact types of a given protein structure.")
     parser.add_argument('--input', type=str, required=True, help='PDB ID of the protein structure to predict.')
-    parser.add_argument('--model', type=str, required=True, help='Type of model to use for prediction (e.g., "multiclass", "ova").')
-    # parser.add_argument('--path', type=str, required=True, help='Path to the file containing the model files.')
+    parser.add_argument('--model', type=str, required=True, help='Type of model to use for prediction (e.g., "mcc", "ova").')
     return parser.parse_args()
 
 def retrieve_features(pdb_id):
+    """Retrieve PDB features and 3DI data for a given PDB ID."""
+    logging.info(f"Retrieving features for PDB ID: {pdb_id}...")
     os.makedirs('./data/output_features', exist_ok=True)
     os.makedirs('./data/output_3di', exist_ok=True)
 
@@ -23,7 +25,6 @@ def retrieve_features(pdb_id):
     if not pdb_file:
         logging.error(f"Failed to retrieve PDB file for ID: {pdb_id}")
         raise ValueError(f"Failed to retrieve PDB file for ID: {pdb_id}")
-    # Extract features using the scripts:
     # Retrieve PDB features
     os.system(f"python3 ./data/script/calc_features.py ./data/pdb_files/{pdb_id}.cif -out_dir ./data/output_features/")
     # Retrieve 3DI features
@@ -33,15 +34,13 @@ def retrieve_features(pdb_id):
 
     logging.info("Merging features and 3di data...")
 
-    # Correct the file paths
+    # Paths for the features and 3di files
     features_file = f'data/output_features/{pdb_id}.tsv'
     threed_file = f'data/output_3di/{pdb_id}.tsv'
 
-    # Read the files, skipping the comment line
+    # Read the files
     features_df = pd.read_csv(features_file, sep='\t')
     threed_df = pd.read_csv(threed_file, sep='\t')
-
-    logging.info("Features and 3di files read successfully.")
 
     # Keep only the necessary columns from the 3di file
     threed_df_subset = threed_df[['ch','resi', 'ins', 'resn', '3di_state']]
@@ -81,11 +80,16 @@ def retrieve_features(pdb_id):
     return merged_df
 
 def preprocess_features(df):
+    """Preprocess the features DataFrame."""
+
+    logging.info("Preprocessing features...")
+
     le = LabelEncoder()
-    # Explicitly create a copy of the DataFrame slice
+    # Mask the columns that are needed for the model
     X = df[['s_ss8','s_rsa', 's_phi', 's_psi', 's_a1', 's_a2', 's_a3', 's_a4', 's_a5', 's_3di_state', 
         't_ss8', 't_rsa', 't_phi', 't_psi', 't_a1', 't_a2', 't_a3', 't_a4', 't_a5', 't_3di_state']].copy()
     
+    # Encode ss8 feature
     X['s_ss8_encoded'] = le.fit_transform(X['s_ss8'])
     X['t_ss8_encoded'] = le.fit_transform(X['t_ss8'])
     X = X.drop(columns=['s_ss8', 't_ss8'])
@@ -97,11 +101,22 @@ def preprocess_features(df):
 
     return X
 
-def predict_contacts(pdb_id, model_type = 'multiclass'):
-    features = retrieve_features(pdb_id)
-    # Preprocess features
-    preprocessed_features = preprocess_features(features)
+def predict_contacts(pdb_id, model_type = 'mcc'):
+    """Predict contact types for a given PDB ID using the specified model type."""
 
+    # Retrieve features and 3DI data
+    features = retrieve_features(pdb_id)
+    if features.empty:
+        logging.error(f"No features retrieved for PDB ID: {pdb_id}")
+        raise ValueError(f"No features retrieved for PDB ID: {pdb_id}")
+    
+    # Preprocess the features
+    preprocessed_features = preprocess_features(features)
+    if preprocessed_features.empty:
+        logging.error(f"Preprocessed features are empty for PDB ID: {pdb_id}")
+        raise ValueError(f"Preprocessed features are empty for PDB ID: {pdb_id}")
+
+    # Map interaction labels to numerical values
     labels = {
         "HBOND": 0,
         "VDW": 1,
@@ -113,10 +128,12 @@ def predict_contacts(pdb_id, model_type = 'multiclass'):
         "Unclassified": 7
     }
 
-    if model_type == 'multiclass':
-        logging.info("Using multiclass model for prediction...")
+    # Selected multiclassifier model
+    if model_type == 'mcc':
+        logging.info("Using multiclassifier model for prediction...")
 
-        model_path = 'data/models/xgboost_model_mcc.json'
+        # Load the multiclass model
+        model_path = 'data/models/xgboost_smote_model_mcc.json'
         if not os.path.exists(model_path):
             logging.warning(f"Model file not found: {model_path}")
             raise FileNotFoundError(f"Model directory does not exist: {model_path}")
@@ -125,11 +142,12 @@ def predict_contacts(pdb_id, model_type = 'multiclass'):
         model.load_model(model_path)
 
         xgbMatrix = xgb.DMatrix(preprocessed_features)
+        # Make predictions
         output = np.argmax(model.predict(xgbMatrix), axis=1)
         preprocessed_features['Interaction'] = output
-        # Convert numerical labels back to string labels
+        # Mapping numerical labels to string labels
         preprocessed_features['Interaction'] = preprocessed_features['Interaction'].map(lambda x: list(labels.keys())[x])
-
+        # Save the predictions
         os.makedirs('./data/output_prediction', exist_ok=True)
         preprocessed_features.to_csv(f'./data/output_prediction/{pdb_id}_predicted.tsv', sep='\t', index=False)
        
@@ -147,8 +165,6 @@ def predict_contacts(pdb_id, model_type = 'multiclass'):
             logging.warning("No model files found in the specified directory.")
             raise FileNotFoundError("No model files found in the specified directory.")
         
-
-        logging.info(f"Loading {len(model_files)} OVA models from {models_dir}...")
         models = []
         for class_num in range(8):  
             model_path = os.path.join(models_dir, f"xgboost_model_class_{class_num}.json")
@@ -162,12 +178,9 @@ def predict_contacts(pdb_id, model_type = 'multiclass'):
         if not models:
             logging.warning("No valid OVA models loaded.")
             raise ValueError("No valid OVA models loaded.")
-        
-        logging.info(f"Loaded {len(models)} OVA models successfully.")
 
-        # Prepare the DMatrix for prediction
         xgbMatrix = xgb.DMatrix(preprocessed_features)
-
+        # Collect class prediction probabilities 
         probas = []
 
         for model in models:
@@ -177,13 +190,14 @@ def predict_contacts(pdb_id, model_type = 'multiclass'):
 
         probas = np.column_stack(probas)
 
-        # Convert probabilities to class labels
+        # Select the class with the highest probability
         preprocessed_features['Interaction'] = np.argmax(probas, axis=1)
         preprocessed_features['Interaction'] = preprocessed_features['Interaction'].map(lambda x: list(labels.keys())[x])
 
         preprocessed_features.to_csv(f'./data/output_prediction/{pdb_id}_predicted.tsv', sep='\t', index=False)
 
     logging.info(f"Predictions for {pdb_id} completed successfully.")
+    logging.info(f'Predicted contacts of {pdb_id} saved to ./data/output_prediction/{pdb_id}_predicted.tsv')
 
 def main():
     args = parse_args()
@@ -197,6 +211,7 @@ def main():
     consoleHandler.setFormatter(logFormatter)
     rootLogger.addHandler(consoleHandler)
 
+    # Set the arguments
     pdb_id = args.input
     model_type = args.model
 
@@ -204,13 +219,12 @@ def main():
         logging.warning("No PDB ID provided for prediction.")
         raise ValueError("PDB ID is required for prediction.")
 
-    if model_type not in ['multiclass', 'ova']:
-        logging.warning("Invalid model type provided. Must be either 'multiclass' or 'ova'.")
-        raise ValueError("Model type must be either 'multiclass' or 'ova'.")
+    if model_type not in ['mcc', 'ova']:
+        logging.warning("Invalid model type provided. Must be either 'mcc' or 'ova'.")
+        raise ValueError("Model type must be either 'mcc' or 'ova'.")
 
     try:
         predict_contacts(pdb_id, model_type)
-        logging.info(f'Predicted contacts of {pdb_id} saved to ./data/output_prediction/{pdb_id}_predicted.tsv')
     except Exception as e:
         logging.warning(f"An error occurred: {e}")
 
