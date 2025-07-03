@@ -231,5 +231,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-# Example usage: python predictor.py --input 1aba --model multiclass
+# Usage: python predictor.py --input <pdb_id> --model <model_type>
+# Example: python predictor.py --input 1A2B --model mcc
+# Example: python predictor.py --input 1A2B --model ova
 
