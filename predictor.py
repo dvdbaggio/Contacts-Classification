@@ -172,12 +172,15 @@ def predict_contacts(pdb_id, model_type = 'mcc'):
                 model = xgb.Booster()
                 model.load_model(model_path)
                 models.append(model)
+                logging.info(f"Loaded model for class {class_num} from {model_path}")
             else:
                 logging.warning(f"Model file not found: {model_path}")
 
         if not models:
             logging.warning("No valid OVA models loaded.")
             raise ValueError("No valid OVA models loaded.")
+        
+        logging.info(f"Loaded {len(models)} OVA models for prediction.")
 
         xgbMatrix = xgb.DMatrix(preprocessed_features)
         # Collect class prediction probabilities 
